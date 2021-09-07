@@ -1,8 +1,7 @@
 package envoy;
 
-import static envoy.Environment.CLUSTER_1_TOPIC;
-
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
@@ -15,6 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,9 +23,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
 
-public class EnvoyTest {
+public class EnvoySimpleTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EnvoyTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EnvoySimpleTest.class);
+
+    private static final String TOPIC = Iterables.get(Environment.CLUSTER1.getTopics(), 0);
+    private static final TopicPartition PARTITION = new TopicPartition(TOPIC, 0);
 
     private Producer<byte[], byte[]> producer;
 
@@ -39,13 +42,17 @@ public class EnvoyTest {
         this.producer.close(Duration.ofMillis(Long.MAX_VALUE));
     }
 
+    /**
+     * Send messages one by one.
+     * Receive messages - verify that payloads and offsets are the same as send()'s results.
+     */
     @Test
-    public void shouldSendRecordsToApples()
+    public void shouldSendRecordsToCluster()
             throws Exception {
 
         final int recordCount = 200;
         final List<ProducerRecord<byte[], byte[]>> sent = IntStream.range(0, recordCount)
-                .mapToObj(x -> Records.makeRecord(CLUSTER_1_TOPIC))
+                .mapToObj(x -> Records.makeRecord(PARTITION.topic()))
                 .collect(Collectors.toList());
 
         final TreeMap<Long, ProducerRecord<byte[], byte[]>> offsetToRecord = new TreeMap<>();
@@ -57,10 +64,11 @@ public class EnvoyTest {
         }
 
         int received = 0;
-        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumer1();
+        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumer(Environment.CLUSTER1);
+        consumer.assign(Collections.singleton(PARTITION));
 
         // We do not need to re-read all messages.
-        consumer.seek(Iterables.getOnlyElement(consumer.assignment()), offsetToRecord.firstKey());
+        consumer.seek(PARTITION, offsetToRecord.firstKey());
 
         // We should receive the records we have sent, and only these.
         while (received < recordCount) {
@@ -80,8 +88,7 @@ public class EnvoyTest {
 
                 received++;
             }
-        }
-
+        } // while
     }
 
 }

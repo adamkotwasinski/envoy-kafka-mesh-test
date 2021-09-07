@@ -15,7 +15,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:${slf4j_version}")
     implementation("org.slf4j:slf4j-log4j12:${slf4j_version}")
 
-    testImplementation("com.google.guava:guava:30.1.1-jre")
+    implementation("com.google.guava:guava:30.1.1-jre")
 
     testImplementation("junit:junit:4.13")
     testImplementation("org.hamcrest:hamcrest:2.2")

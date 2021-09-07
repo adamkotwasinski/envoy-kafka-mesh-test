@@ -1,17 +1,31 @@
 package envoy;
 
-public class Environment {
+import static envoy.RandomHolder.RANDOM;
 
-    public static final String CLUSTER_1 = "localhost:9092";
-    public static final String CLUSTER_1_TOPIC = "apples";
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-    public static final String CLUSTER_2 = "localhost:9092";
-    public static final String CLUSTER_2_TOPIC = "bananas";
+import com.google.common.collect.ImmutableList;
 
-    public static final String CLUSTER_3 = "localhost:9092";
-    public static final String CLUSTER_3_TOPIC = "cherries";
+class Environment {
+
+    // The topics have to exist before the tests are executed.
+    public static final UpstreamCluster CLUSTER1 = new UpstreamCluster("localhost:9092", 1, "apples", "apricots");
+    public static final UpstreamCluster CLUSTER2 = new UpstreamCluster("localhost:9093", 1, "bananas", "berries");
+    public static final UpstreamCluster CLUSTER3 = new UpstreamCluster("localhost:9094", 5, "cherries", "chocolates");
+
+    public static final List<UpstreamCluster> CLUSTERS = ImmutableList.of(CLUSTER1, CLUSTER2, CLUSTER3);
+
+    public static List<String> ALL_TOPICS = CLUSTERS.stream()
+            .flatMap(cluster -> cluster.getTopics().stream())
+            .collect(Collectors.toCollection(ArrayList::new));
 
     public static final String ENVOY = "localhost:19092";
+
+    public static String randomTopic() {
+        return ALL_TOPICS.get(RANDOM.nextInt(ALL_TOPICS.size()));
+    }
 
     private Environment() {
     }
