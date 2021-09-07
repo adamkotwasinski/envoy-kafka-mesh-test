@@ -1,5 +1,5 @@
-# Example
+# envoy-kafka-mesh-test
 
-Uses gradle 7.2
+Runs some Kafka clients against Envoy and upstream Kafka clusters.
 
-`./gradlew test` to test.
+The tests should not be executed in parallel, as some of them depend on strict ordering of how the messages get appended.
