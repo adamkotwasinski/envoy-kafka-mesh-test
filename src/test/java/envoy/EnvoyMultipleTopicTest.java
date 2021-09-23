@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class EnvoyMultipleTopicTest {
     /**
      * Each producer will send this many messages.
      */
-    private static int MESSAGES_PER_PRODUCER = 1000;
+    private static int MESSAGES_PER_PRODUCER = 2000;
 
     /**
      * After each message we will wait _up to_ this much time.
@@ -125,6 +126,7 @@ public class EnvoyMultipleTopicTest {
                 topicToRecords.get(delivery.record.topic()).add(delivery);
             }
         }
+        LOG.info("Sent all records");
 
         topicToRecords.entrySet().forEach(e -> {
             final int count = e.getValue().size();
@@ -140,6 +142,7 @@ public class EnvoyMultipleTopicTest {
 
         // then
         assertThat(received, hasSize(CONCURRENT_PRODUCERS * MESSAGES_PER_PRODUCER));
+        LOG.info("Received all records");
 
         final Map<String, Long> driftPerTopic = new TreeMap<>();
         Environment.ALL_TOPICS.forEach(topic -> driftPerTopic.put(topic, 0L));
@@ -160,11 +163,7 @@ public class EnvoyMultipleTopicTest {
         final CountDownLatch cl = new CountDownLatch(MESSAGES_PER_PRODUCER);
 
         final int trip = Math.max(MESSAGES_PER_PRODUCER / 20, 1);
-        for (int i = 0; i < MESSAGES_PER_PRODUCER; ++i) {
-            if (0 == i % trip) {
-                LOG.info("Submitted {} / {} messages", i, MESSAGES_PER_PRODUCER);
-            }
-
+        for (int i = 1; i <= MESSAGES_PER_PRODUCER; ++i) {
             final ProducerRecord<byte[], byte[]> record = Records.makeRecord(Environment.randomTopic());
             producer.send(record, (metadata, exception) -> {
 
@@ -178,6 +177,10 @@ public class EnvoyMultipleTopicTest {
                 }
 
             });
+
+            if (0 == i % trip) {
+                LOG.info("Submitted {} / {} messages", i, MESSAGES_PER_PRODUCER);
+            }
 
             this.delayer.delay(MESSAGE_SEND_DELAY_MS_MAX);
         }
@@ -208,11 +211,14 @@ public class EnvoyMultipleTopicTest {
         return false;
     }
 
-    // FIXME: Optimize this.
     private static Optional<Long> findMatchingRecord(final ConsumerRecord<byte[], byte[]> record,
                                                      final List<DeliveryInfo> potentialMatches) {
 
+        final int valueHash = Arrays.hashCode(record.value());
         for (final DeliveryInfo candidate : potentialMatches) {
+            if (valueHash != candidate.valueHash) {
+                continue;
+            }
             if (Records.equalRecordContents(candidate.record, record)) {
                 // If multiple records got batched by KafkaProducer, the offsets might have drifter.
                 return Optional.of(Math.abs(record.offset() - candidate.offset));
@@ -225,10 +231,12 @@ public class EnvoyMultipleTopicTest {
     private static class DeliveryInfo {
 
         public final ProducerRecord<byte[], byte[]> record;
+        public final int valueHash;
         public final long offset;
 
         public DeliveryInfo(final ProducerRecord<byte[], byte[]> record, final long offset) {
             this.record = record;
+            this.valueHash = Arrays.hashCode(record.value());
             this.offset = offset;
         }
 
