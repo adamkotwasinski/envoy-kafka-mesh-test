@@ -53,12 +53,12 @@ public class MultipleTopicMeshTest {
     /**
      * Each message sent by producer will go to a random topic (they all go through Envoy).
      */
-    private static int CONCURRENT_PRODUCERS = 50;
+    private static int CONCURRENT_PRODUCERS = 20;
 
     /**
      * Each producer will send this many messages.
      */
-    private static int MESSAGES_PER_PRODUCER = 2000;
+    private static int MESSAGES_PER_PRODUCER = 1000;
 
     /**
      * After each message we will wait _up to_ this much time.

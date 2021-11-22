@@ -1,9 +1,9 @@
 /**
  * Tests for Envoy kafka-mesh filter.
  * Requires:
- * - envoy at localhost:19092 with config from 'envoy-mesh.yaml'
- * - singleton kafka at localhost:9092
- * - singleton kafka at localhost:9093
- * - singleton kafka at localhost:9094
+ * - envoy at localhost:29092
+ * - singleton kafka at localhost:9492
+ * - singleton kafka at localhost:9493
+ * - singleton kafka at localhost:9494
  */
 package envoy.mesh;

@@ -11,9 +11,9 @@ import com.google.common.collect.ImmutableList;
 public class Environment {
 
     // The topics have to exist before the tests are executed.
-    public static final UpstreamCluster CLUSTER1 = new UpstreamCluster("localhost:9092", 1, "apples", "apricots");
-    public static final UpstreamCluster CLUSTER2 = new UpstreamCluster("localhost:9093", 1, "bananas", "berries");
-    public static final UpstreamCluster CLUSTER3 = new UpstreamCluster("localhost:9094", 5, "cherries", "chocolates");
+    public static final UpstreamCluster CLUSTER1 = new UpstreamCluster("localhost:9492", 1, "apples", "apricots");
+    public static final UpstreamCluster CLUSTER2 = new UpstreamCluster("localhost:9493", 1, "bananas", "berries");
+    public static final UpstreamCluster CLUSTER3 = new UpstreamCluster("localhost:9494", 5, "cherries", "chocolates");
 
     public static final List<UpstreamCluster> CLUSTERS = ImmutableList.of(CLUSTER1, CLUSTER2, CLUSTER3);
 
