@@ -1,23 +1,25 @@
-# envoy-kafka-mesh-test
+# Tests for Envoy Kafka filters
 
 Runs some Kafka clients against Envoy and upstream Kafka clusters.
 
-Right now, one can run all tests from `envoy.broker` or `envoy.mesh` package, but not both, as there are some configuration collisions that I need to address.
-
 The tests should not be executed in parallel, as some of them depend on strict ordering of how the messages get appended.
+
+Example configuration for Envoy is present in `kafka-all.yaml` (notice it requires 4 Kafka brokers - 1 for broker tests, 3 for mesh).
+
+If Kafka brokers and Envoy are running with config mentioned below, then `./gradlew test` should work.
 
 ## Requirements for broker-filter tests:
 
-* 1-node Kafka clusters on localhost:9092, advertising itself on localhost:19092 (what means Envoy)
-* Envoy listening on localhost:19092 - see `envoy-broker.yaml`.
+* 1-node Kafka cluster on localhost:9292, advertising itself on localhost:19092 (what means Envoy)
+* Envoy listening on localhost:19092
 
 ## Requirements for mesh-filter tests:
 
 * 3 Kafka clusters on:
-    * localhost:9092, with topics `apples`, `apricots` with 1 partition each
-    * localhost:9093, with topics `bananas`, `berries` with 1 partition each
-    * localhost:9094, with topics `cherries`, `chocolates` with 5 partitions each
-* Envoy listening on localhost:29092, with forwarding prefix-based rules - see `envoy-mesh.yaml`:
-    * `a` to localhost:9092
-    * `b` to localhost:9093
-    * `c` to localhost:9094
+    * localhost:9492, with topics `apples`, `apricots` with 1 partition each
+    * localhost:9493, with topics `bananas`, `berries` with 1 partition each
+    * localhost:9494, with topics `cherries`, `chocolates` with 5 partitions each
+* Envoy listening on localhost:29092, with forwarding prefix-based rules:
+    * `a` to localhost:9492
+    * `b` to localhost:9493
+    * `c` to localhost:9494
