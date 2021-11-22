@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
-class Environment {
+public class Environment {
 
     // The topics have to exist before the tests are executed.
     public static final UpstreamCluster CLUSTER1 = new UpstreamCluster("localhost:9092", 1, "apples", "apricots");
@@ -21,7 +21,8 @@ class Environment {
             .flatMap(cluster -> cluster.getTopics().stream())
             .collect(Collectors.toCollection(ArrayList::new));
 
-    public static final String ENVOY = "localhost:19092";
+    public static final String ENVOY_BROKER = "localhost:19092";
+    public static final String ENVOY_MESH = "localhost:29092";
 
     public static String randomTopic() {
         return ALL_TOPICS.get(RANDOM.nextInt(ALL_TOPICS.size()));

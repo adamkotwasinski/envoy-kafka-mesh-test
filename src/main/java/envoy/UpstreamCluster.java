@@ -11,7 +11,7 @@ import org.apache.kafka.common.TopicPartition;
  * Represents upstream Kafka cluster.
  * Compare to what is provided to Envoy config.
  */
-class UpstreamCluster {
+public class UpstreamCluster {
 
     private final String brokers;
     private final int partitionCount;
