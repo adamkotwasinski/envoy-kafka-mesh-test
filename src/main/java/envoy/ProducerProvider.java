@@ -10,11 +10,27 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 
 public class ProducerProvider {
 
-    public static Producer<byte[], byte[]> makeProducer() {
+    /**
+     * Producer that points to Envoy mesh.
+     * @return producer
+     */
+    public static Producer<byte[], byte[]> makeMeshProducer() {
         final Properties properties = new Properties();
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_MESH);
+        return new KafkaProducer<>(properties);
+    }
+
+    /**
+     * Producer that points to Envoy (as a broker).
+     * @return producer
+     */
+    public static Producer<byte[], byte[]> makeBrokerProducer() {
+        final Properties properties = new Properties();
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_BROKER);
         return new KafkaProducer<>(properties);
     }
 

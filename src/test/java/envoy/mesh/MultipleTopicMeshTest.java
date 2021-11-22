@@ -1,4 +1,4 @@
-package envoy;
+package envoy.mesh;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,14 +34,21 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
+import envoy.ConsumerProvider;
+import envoy.Delayer;
+import envoy.Environment;
+import envoy.ProducerProvider;
+import envoy.Records;
+import envoy.UpstreamCluster;
+
 /**
  * Here we are going to create N producers, sending each record to a random topic to be handled by Envoy.
  * Later, we receive these these records from upstream clusters, and verify that data is correct.
  * We also track a "drift" metric that is introduced by Envoy re-batching records in between.
  */
-public class EnvoyMultipleTopicTest {
+public class MultipleTopicMeshTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EnvoyMultipleTopicTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultipleTopicMeshTest.class);
 
     /**
      * Each message sent by producer will go to a random topic (they all go through Envoy).
@@ -78,7 +85,7 @@ public class EnvoyMultipleTopicTest {
     private List<Producer<byte[], byte[]>> createProducers() {
         final List<Producer<byte[], byte[]>> result = new ArrayList<>();
         for (int i = 0; i < CONCURRENT_PRODUCERS; ++i) {
-            final Producer<byte[], byte[]> producer = ProducerProvider.makeProducer();
+            final Producer<byte[], byte[]> producer = ProducerProvider.makeMeshProducer();
             result.add(producer);
         }
         return result;
@@ -87,7 +94,7 @@ public class EnvoyMultipleTopicTest {
     private List<Consumer<byte[], byte[]>> createConsumers() {
         final List<Consumer<byte[], byte[]>> result = new ArrayList<>();
         for (final UpstreamCluster cluster : Environment.CLUSTERS) {
-            final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumer(cluster,
+            final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeClusterConsumer(cluster,
                     ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
             final List<TopicPartition> partitions = cluster.allConsumerPartitions();
             consumer.assign(partitions);

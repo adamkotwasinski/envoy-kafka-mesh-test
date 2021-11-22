@@ -1,4 +1,4 @@
-package envoy;
+package envoy.mesh;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -23,9 +23,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
 
-public class EnvoySimpleTest {
+import envoy.ConsumerProvider;
+import envoy.Environment;
+import envoy.ProducerProvider;
+import envoy.Records;
 
-    private static final Logger LOG = LoggerFactory.getLogger(EnvoySimpleTest.class);
+public class SimpleMeshTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleMeshTest.class);
 
     private static final String TOPIC = Iterables.get(Environment.CLUSTER1.getTopics(), 0);
     private static final TopicPartition PARTITION = new TopicPartition(TOPIC, 0);
@@ -34,7 +39,7 @@ public class EnvoySimpleTest {
 
     @Before
     public void setUp() {
-        this.producer = ProducerProvider.makeProducer();
+        this.producer = ProducerProvider.makeMeshProducer();
     }
 
     @After
@@ -64,7 +69,7 @@ public class EnvoySimpleTest {
         }
 
         int received = 0;
-        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumer(Environment.CLUSTER1);
+        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeClusterConsumer(Environment.CLUSTER1);
         consumer.assign(Collections.singleton(PARTITION));
 
         // We do not need to re-read all messages.

@@ -14,9 +14,17 @@ import com.google.common.collect.Lists;
 public class Records {
 
     public static ProducerRecord<byte[], byte[]> makeRecord(final String topic) {
+        return makeCustomRecord(topic, null);
+    }
+
+    public static ProducerRecord<byte[], byte[]> makeRecord(final String topic, final int partition) {
+        return makeCustomRecord(topic, partition);
+    }
+
+    private static ProducerRecord<byte[], byte[]> makeCustomRecord(final String topic, final Integer partition) {
         final byte[] key = RandomHolder.bytes(256);
         final byte[] value = RandomHolder.bytes(2048);
-        final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topic, key, value);
+        final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topic, partition, key, value);
         for (int i = 0; i < RandomHolder.nextInt(32); ++i) {
             for (int j = 0; j < RandomHolder.nextInt(3); j++) {
                 // Let's make some records with the same names.
