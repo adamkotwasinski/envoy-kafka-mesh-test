@@ -63,12 +63,14 @@ public class BrokerFilterTest {
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
         consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "mytestgroup");
+        consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         final KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(consumerProperties);
 
         consumer.assign(Collections.singleton(tp));
+        LOG.info("=== GETTING CURRENT POSITION ===");
         final long currentPosition = consumer.position(tp);
-        LOG.info("Current consumer position is {}", currentPosition);
+        LOG.info("=== Current consumer position is {} ===", currentPosition);
 
         final Properties producerProperties = new Properties();
         producerProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
@@ -81,14 +83,17 @@ public class BrokerFilterTest {
         final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp.topic(), tp.partition(), key, value);
 
         // when
+        LOG.info("=== SENDING RECORD ===");
         final RecordMetadata rm = producer.send(record).get();
-        LOG.info("Saved at position {}", rm.offset());
+        LOG.info("=== Saved at position {} ===", rm.offset());
 
         // then
         assertThat(rm.offset(), equalTo(currentPosition));
 
         // when - 2
+        LOG.info("=== POLLING RECORDS ===");
         final ConsumerRecords<byte[], byte[]> records = consumer.poll(Duration.ofSeconds(5));
+        LOG.info("=== Received records: {} ===", records.count());
 
         // then - 2
         assertThat(records.count(), equalTo(1));
@@ -97,7 +102,9 @@ public class BrokerFilterTest {
         assertThat(equalRecordContents(record, received), equalTo(true));
 
         // when, then - 3
+        LOG.info("=== COMMITTING OFFSETS ===");
         consumer.commitSync();
+        LOG.info("=== Committed ===");
 
         // cleanup
         consumer.close();
@@ -116,22 +123,28 @@ public class BrokerFilterTest {
         final NewTopic newTopic = new NewTopic("bbb", 13, (short) 1);
 
         // when
+        LOG.info("=== CREATING TOPIC ===");
         final CreateTopicsResult ctr = admin.createTopics(Collections.singleton(newTopic));
 
         // then
         ctr.all().get();
+        LOG.info("=== Topic created ===");
 
         // when - 2
+        LOG.info("=== LISTING TOPICS ===");
         final Set<String> names = admin.listTopics().names().get();
+        LOG.info("=== Listed ===");
 
         // then - 2
         assertThat(names, hasItem(newTopic.name()));
 
         // when - 3
+        LOG.info("=== DELETING TOPIC ===");
         final DeleteTopicsResult dtr = admin.deleteTopics(Collections.singleton(newTopic.name()));
 
         // then - 3
         dtr.all().get();
+        LOG.info("=== Deleted ===");
 
         // cleanup
         admin.close();
