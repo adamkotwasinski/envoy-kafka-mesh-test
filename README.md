@@ -4,7 +4,7 @@ Runs some Kafka clients against Envoy and upstream Kafka clusters.
 
 The tests should not be executed in parallel, as some of them depend on strict ordering of how the messages get appended.
 
-Example configuration for Envoy is present in `kafka-all.yaml` (notice it requires 4 Kafka brokers - 1 for broker tests, 3 for mesh).
+Configuration for Envoy is present in `kafka-all.yaml` (notice it requires 4 Kafka brokers - 1 for broker tests, 3 for mesh - see below).
 
 If Kafka brokers and Envoy are running with config mentioned below, then `./gradlew test` should work.
 

@@ -18,6 +18,7 @@ public class ProducerProvider {
         final Properties properties = new Properties();
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+        properties.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "false");
         properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_MESH);
         return new KafkaProducer<>(properties);
     }

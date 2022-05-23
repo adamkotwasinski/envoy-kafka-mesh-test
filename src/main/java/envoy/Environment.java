@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
+/**
+ * Take a look into <b>README.md</b> and <b>kafka-all.yaml</b> to see what the ports mean.
+ */
 public class Environment {
 
     // The topics have to exist before the tests are executed.
