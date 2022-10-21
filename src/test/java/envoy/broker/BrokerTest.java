@@ -3,15 +3,18 @@ package envoy.broker;
 import static envoy.Records.equalRecordContents;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
+import org.apache.kafka.clients.admin.LogDirDescription;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -98,6 +101,30 @@ public class BrokerTest {
 
         // then - 3
         dtr.all().get();
+    }
+
+    /**
+     * This test requires Kafka broker to be version >= 3.3.1 and have broker.id = 1.
+     */
+    @Test
+    public void shouldHandleLogDirDescription()
+            throws Exception {
+
+        // given
+        final Admin admin = AdminProvider.makeBrokerAdmin();
+        final int brokerId = 1;
+
+        // when
+        final Map<String, LogDirDescription> result = admin.describeLogDirs(Collections.singleton(brokerId))
+                .descriptions()
+                .get(brokerId)
+                .get();
+
+        // then
+        assertThat(result.size(), greaterThan(0));
+        final LogDirDescription ldd = result.values().iterator().next();
+        assertThat(ldd.totalBytes().isPresent(), equalTo(true));
+        assertThat(ldd.usableBytes().isPresent(), equalTo(true));
     }
 
 }
