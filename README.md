@@ -11,6 +11,8 @@ If Kafka brokers and Envoy are running with config mentioned below, then `./grad
 ## Requirements for broker-filter tests:
 
 * 1-node Kafka cluster on localhost:9292, advertising itself on localhost:19092 (what means Envoy)
+    * expected version is 3.3.1
+    * broker.id = 1
 * Envoy listening on localhost:19092
 
 ## Requirements for mesh-filter tests:
