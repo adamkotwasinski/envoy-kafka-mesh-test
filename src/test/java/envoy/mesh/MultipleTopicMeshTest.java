@@ -85,7 +85,7 @@ public class MultipleTopicMeshTest {
     private List<Producer<byte[], byte[]>> createProducers() {
         final List<Producer<byte[], byte[]>> result = new ArrayList<>();
         for (int i = 0; i < CONCURRENT_PRODUCERS; ++i) {
-            final Producer<byte[], byte[]> producer = ProducerProvider.makeMeshProducer();
+            final Producer<byte[], byte[]> producer = ProducerProvider.makeProducerToEnvoyMesh();
             result.add(producer);
         }
         return result;
@@ -94,7 +94,7 @@ public class MultipleTopicMeshTest {
     private List<Consumer<byte[], byte[]>> createConsumers() {
         final List<Consumer<byte[], byte[]>> result = new ArrayList<>();
         for (final UpstreamCluster cluster : Environment.CLUSTERS) {
-            final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeClusterConsumer(cluster,
+            final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumerFromKafkaDirectly(cluster,
                     ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
             final List<TopicPartition> partitions = cluster.allConsumerPartitions();
             consumer.assign(partitions);

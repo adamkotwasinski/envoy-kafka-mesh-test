@@ -11,27 +11,41 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 public class ProducerProvider {
 
     /**
-     * Producer that points to Envoy mesh.
+     * Create a producer that points to Envoy (through the broker filter).
      * @return producer
      */
-    public static Producer<byte[], byte[]> makeMeshProducer() {
-        final Properties properties = new Properties();
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        properties.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "false");
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_MESH);
-        return new KafkaProducer<>(properties);
+    public static Producer<byte[], byte[]> makeProducerToEnvoyBroker() {
+        return makeProducer(Environment.ENVOY_BROKER);
     }
 
     /**
-     * Producer that points to Envoy (as a broker).
+     * Create a producer that points to Envoy (through the mesh filter).
      * @return producer
      */
-    public static Producer<byte[], byte[]> makeBrokerProducer() {
+    public static Producer<byte[], byte[]> makeProducerToEnvoyMesh() {
+        return makeProducer(Environment.ENVOY_MESH, ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "false");
+    }
+
+    /**
+     * Create a producer that points to a particular upstream Kafka cluster (instead of Envoy with mesh listener).
+     * <p>
+     * This is intended only for testing / setup purposes.
+     *
+     * @param uc cluster
+     * @return producer
+     */
+    public static Producer<byte[], byte[]> makeProducerToKafkaDirectly(final UpstreamCluster uc) {
+        return makeProducer(uc.getBrokers());
+    }
+
+    private static Producer<byte[], byte[]> makeProducer(final String bootstrapServers, final String... extraArgs) {
         final Properties properties = new Properties();
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_BROKER);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        for (int i = 0; i < extraArgs.length / 2; ++i) {
+            properties.put(extraArgs[2 * i], extraArgs[2 * i + 1]);
+        }
         return new KafkaProducer<>(properties);
     }
 
