@@ -46,14 +46,14 @@ public class BrokerTest {
         // given
         final TopicPartition tp = new TopicPartition("envoybrokerfiltertest", 0);
 
-        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeBrokerConsumer(
+        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumerFromEnvoyBroker(
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest",
                 ConsumerConfig.GROUP_ID_CONFIG, "mytestgroup");
         consumer.assign(Collections.singleton(tp));
         final long currentPosition = consumer.position(tp);
         LOG.info("Current consumer position is {}", currentPosition);
 
-        final Producer<byte[], byte[]> producer = ProducerProvider.makeBrokerProducer();
+        final Producer<byte[], byte[]> producer = ProducerProvider.makeProducerToEnvoyBroker();
         final ProducerRecord<byte[], byte[]> record = Records.makeRecord(tp.topic(), tp.partition());
 
         // when

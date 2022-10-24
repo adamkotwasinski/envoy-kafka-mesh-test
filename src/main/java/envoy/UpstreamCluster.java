@@ -27,6 +27,10 @@ public class UpstreamCluster {
         return this.brokers;
     }
 
+    public int getPartitionCount() {
+        return this.partitionCount;
+    }
+
     public List<String> getTopics() {
         return this.topics;
     }

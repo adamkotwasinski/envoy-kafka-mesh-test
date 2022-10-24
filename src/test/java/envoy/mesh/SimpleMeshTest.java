@@ -39,7 +39,7 @@ public class SimpleMeshTest {
 
     @Before
     public void setUp() {
-        this.producer = ProducerProvider.makeMeshProducer();
+        this.producer = ProducerProvider.makeProducerToEnvoyMesh();
     }
 
     @After
@@ -69,7 +69,7 @@ public class SimpleMeshTest {
         }
 
         int received = 0;
-        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeClusterConsumer(Environment.CLUSTER1);
+        final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumerFromKafkaDirectly(Environment.CLUSTER1);
         consumer.assign(Collections.singleton(PARTITION));
 
         // We do not need to re-read all messages.
