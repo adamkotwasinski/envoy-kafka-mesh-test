@@ -8,6 +8,8 @@ Configuration for Envoy is present in `kafka-all.yaml` (notice it requires 4 Kaf
 
 If Kafka brokers and Envoy are running with config mentioned below, then `./gradlew test` should work.
 
+`StatefulConsumerProxyTest` uses Envoy's librdkafka consumers, so it might be necessary to restart Envoy before running the same test again.
+
 If upgrading Kafka, you can use `compare.py` to figure out what changed.
 
 ## Requirements for broker-filter tests:
