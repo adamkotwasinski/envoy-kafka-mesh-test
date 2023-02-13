@@ -8,6 +8,8 @@ Configuration for Envoy is present in `kafka-all.yaml` (notice it requires 4 Kaf
 
 If Kafka brokers and Envoy are running with config mentioned below, then `./gradlew test` should work.
 
+If upgrading Kafka, you can use `compare.py` to figure out what changed.
+
 ## Requirements for broker-filter tests:
 
 * 1-node Kafka cluster on localhost:9292, advertising itself on localhost:19092 (what means Envoy)
