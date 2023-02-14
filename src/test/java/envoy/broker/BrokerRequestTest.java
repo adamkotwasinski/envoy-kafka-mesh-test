@@ -4,6 +4,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.kafka.common.message.ApiMessageType;
 import org.apache.kafka.common.protocol.ApiKeys;
@@ -11,20 +13,42 @@ import org.apache.kafka.common.protocol.ApiMessage;
 import org.apache.kafka.common.protocol.ByteBufferAccessor;
 import org.apache.kafka.common.protocol.MessageSizeAccumulator;
 import org.apache.kafka.common.protocol.ObjectSerializationCache;
+import org.apache.kafka.common.requests.AbstractResponse;
 import org.apache.kafka.common.requests.RequestHeader;
+import org.apache.kafka.common.requests.ResponseHeader;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import envoy.ReadHelper;
+
 /**
  * In this test suite, we just generate basic requests (fortunately there's a factory method for that) and send them upstream.
- * Unfortunately we cannot wait for replies, as the upstream seems to hang on some malformed requests like PRODUCE.
+ * For most of the requests, the upstream sends a response, so we try to get it as well (usually it's an error code, as we send empty stuff).
  *
  * @author adam.kotwasinski
  */
-public class AllRequestsBrokerTest {
+public class BrokerRequestTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AllRequestsBrokerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BrokerRequestTest.class);
+
+    // Requets that get ignored by upstream if they have a dummy value - quirky but not surprising (what's the value of empty PRODUCE?).
+    private static final List<ApiKeys> NO_RESPONSE = Arrays.asList(
+            ApiKeys.PRODUCE);
+
+    // Requests that ruin the connection (upstream closes it / ignores future requests) if they have a dummy value.
+    private static final List<ApiKeys> NOT_TESTED = Arrays.asList(
+            ApiKeys.OFFSET_FETCH,
+            ApiKeys.DESCRIBE_ACLS,
+            ApiKeys.VOTE,
+            ApiKeys.BEGIN_QUORUM_EPOCH,
+            ApiKeys.END_QUORUM_EPOCH,
+            ApiKeys.DESCRIBE_QUORUM,
+            ApiKeys.ENVELOPE,
+            ApiKeys.FETCH_SNAPSHOT,
+            ApiKeys.BROKER_REGISTRATION,
+            ApiKeys.BROKER_HEARTBEAT,
+            ApiKeys.UNREGISTER_BROKER);
 
     // Manual verification: go to http://localhost:9901/stats and take a look at kafka.broker.request.* metrics.
     // XXX automate this :)
@@ -36,8 +60,23 @@ public class AllRequestsBrokerTest {
         try (SocketChannel channel = SocketChannel.open(address)) {
             int correlationId = 0;
             for (final ApiKeys apiKey : ApiKeys.values()) {
+
+                if (NOT_TESTED.contains(apiKey)) {
+                    LOG.info("Ignoring {}", apiKey);
+                    continue;
+                }
+
                 LOG.info("Sending {}", apiKey);
                 sendRequest(channel, apiKey, apiKey.latestVersion(), correlationId++); // This should not fail.
+
+                if (NO_RESPONSE.contains(apiKey)) {
+                    LOG.info("Response will not be sent for dummy {} request", apiKey);
+                }
+                else {
+                    LOG.info("Receiving {}", apiKey);
+                    receiveResponse(channel, apiKey, apiKey.latestVersion());
+                }
+
             }
         }
     }
@@ -77,6 +116,13 @@ public class AllRequestsBrokerTest {
         bb.flip();
 
         return bb;
+    }
+
+    private static void receiveResponse(final SocketChannel channel, final ApiKeys apiKey, final short version) {
+        final ByteBuffer data = ReadHelper.receive(channel);
+        final ResponseHeader header = ResponseHeader.parse(data, apiKey.responseHeaderVersion(version));
+        final AbstractResponse response = AbstractResponse.parseResponse(apiKey, data, version);
+        LOG.info("Respose [{}]: {}", header.correlationId(), response);
     }
 
 }
