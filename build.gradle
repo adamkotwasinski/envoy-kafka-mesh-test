@@ -8,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    def kafka_version = "3.4.0"
+    def kafka_version = "3.5.1"
     implementation("org.apache.kafka:kafka-clients:${kafka_version}")
 
     def slf4j_version = "1.7.32"
