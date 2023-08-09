@@ -1,5 +1,8 @@
 package envoy.broker;
 
+import static envoy.Environment.ENVOY_BROKER_HOST;
+import static envoy.Environment.ENVOY_BROKER_PORT;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -34,7 +37,9 @@ public class BrokerRequestTest {
 
     // Requets that get ignored by upstream if they have a dummy value - quirky but not surprising (what's the value of empty PRODUCE?).
     private static final List<ApiKeys> NO_RESPONSE = Arrays.asList(
-            ApiKeys.PRODUCE);
+            ApiKeys.PRODUCE,
+            ApiKeys.ADD_PARTITIONS_TO_TXN,
+            ApiKeys.CONSUMER_GROUP_HEARTBEAT);
 
     // Requests that ruin the connection (upstream closes it / ignores future requests) if they have a dummy value.
     private static final List<ApiKeys> NOT_TESTED = Arrays.asList(
@@ -56,25 +61,26 @@ public class BrokerRequestTest {
     public void shouldSendAllRequests()
             throws Exception {
 
-        final SocketAddress address = new InetSocketAddress("localhost", 19092);
-        try (SocketChannel channel = SocketChannel.open(address)) {
-            int correlationId = 0;
-            for (final ApiKeys apiKey : ApiKeys.values()) {
+        for (final ApiKeys apiKey : ApiKeys.values()) {
 
-                if (NOT_TESTED.contains(apiKey)) {
-                    LOG.info("Ignoring {}", apiKey);
-                    continue;
-                }
+            if (NOT_TESTED.contains(apiKey)) {
+                LOG.info("Ignoring {}", apiKey);
+                continue;
+            }
 
-                LOG.info("Sending {}", apiKey);
-                sendRequest(channel, apiKey, apiKey.latestVersion(), correlationId++); // This should not fail.
+            final SocketAddress address = new InetSocketAddress(ENVOY_BROKER_HOST, ENVOY_BROKER_PORT);
+            try (SocketChannel channel = SocketChannel.open(address)) {
+
+                final short version = apiKey.latestVersion();
+                LOG.info("Sending {}/{}", apiKey, version);
+                sendRequest(channel, apiKey, version, 0); // This should not fail.
 
                 if (NO_RESPONSE.contains(apiKey)) {
                     LOG.info("Response will not be sent for dummy {} request", apiKey);
                 }
                 else {
                     LOG.info("Receiving {}", apiKey);
-                    receiveResponse(channel, apiKey, apiKey.latestVersion());
+                    receiveResponse(channel, apiKey, version);
                 }
 
             }

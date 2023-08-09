@@ -24,7 +24,10 @@ public class Environment {
             .flatMap(cluster -> cluster.getTopics().stream())
             .collect(Collectors.toCollection(ArrayList::new));
 
-    public static final String ENVOY_BROKER = "localhost:19092";
+    public static final String ENVOY_BROKER_HOST = "localhost";
+    public static final int ENVOY_BROKER_PORT = 19092;
+    public static final String ENVOY_BROKER = String.format("%s:%s", ENVOY_BROKER_HOST, ENVOY_BROKER_PORT);
+
     public static final String ENVOY_MESH = "localhost:29092";
 
     public static String randomTopic() {
