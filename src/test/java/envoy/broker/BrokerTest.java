@@ -1,5 +1,7 @@
 package envoy.broker;
 
+import static envoy.Environment.ENVOY_BROKER_HOST;
+import static envoy.Environment.ENVOY_BROKER_PORTS;
 import static envoy.Records.equalRecordContents;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -147,8 +149,8 @@ public class BrokerTest {
 
         // then
         final Collection<Node> nodes = result.nodes().get();
-        assertThat(nodes.stream().map(Node::host).collect(toSet()), contains("localhost"));
-        assertThat(nodes.stream().map(Node::port).collect(toSet()), contains(19092, 19093, 19094));
+        assertThat(nodes.stream().map(Node::host).collect(toSet()), contains(ENVOY_BROKER_HOST));
+        assertThat(nodes.stream().map(Node::port).collect(toSet()), contains(ENVOY_BROKER_PORTS.toArray()));
     }
 
 }
