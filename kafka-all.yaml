@@ -5,7 +5,7 @@ static_resources:
   - name: meshlistener
     address:
       socket_address:
-        address: 0.0.0.0
+        address: 127.0.0.1
         port_value: 29092
     filter_chains:
     - filters:
@@ -40,29 +40,78 @@ static_resources:
           - target_cluster: kafka_c3
             topic_prefix: c
 
-  - name: brokerlistener
-    stat_prefix: brokerlistener
+  - name: brokerlistener1
+    stat_prefix: brokerlistener1
     address:
       socket_address:
-        address: 0.0.0.0
+        address: 127.0.0.1
         port_value: 19092
     filter_chains:
     - filters:
       - name: envoy.filters.network.kafka_broker
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker
-          stat_prefix: broker
+          stat_prefix: b1
+          id_based_broker_address_rewrite_spec: &broker_address_rewrite_rules
+            rules:
+            - id: 1
+              host: localhost
+              port: 19092
+            - id: 2
+              host: localhost
+              port: 19093
+            - id: 3
+              host: localhost
+              port: 19094
       - name: envoy.filters.network.tcp_proxy
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           stat_prefix: tcp
-          cluster: localkafka
+          cluster: broker1
+
+  - name: brokerlistener2
+    stat_prefix: brokerlistener2
+    address:
+      socket_address:
+        address: 127.0.0.1
+        port_value: 19093
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.kafka_broker
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker
+          stat_prefix: b2
+          id_based_broker_address_rewrite_spec: *broker_address_rewrite_rules
+      - name: envoy.filters.network.tcp_proxy
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          stat_prefix: tcp
+          cluster: broker2
+
+  - name: brokerlistener3
+    stat_prefix: brokerlistener3
+    address:
+      socket_address:
+        address: 127.0.0.1
+        port_value: 19094
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.kafka_broker
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker
+          stat_prefix: b3
+          id_based_broker_address_rewrite_spec: *broker_address_rewrite_rules
+      - name: envoy.filters.network.tcp_proxy
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          stat_prefix: tcp
+          cluster: broker3
 
   clusters:
-  - name: localkafka
+  - name: broker1
     connect_timeout: 0.25s
-    type: strict_dns
-    lb_policy: round_robin
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: some_service
       endpoints:
@@ -71,7 +120,33 @@ static_resources:
               address:
                 socket_address:
                   address: 127.0.0.1
-                  port_value: 9292
+                  port_value: 9092
+  - name: broker2
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: some_service
+      endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 9093
+  - name: broker3
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: some_service
+      endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 9094
 
 layered_runtime:
   layers:

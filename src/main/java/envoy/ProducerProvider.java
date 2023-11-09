@@ -15,7 +15,7 @@ public class ProducerProvider {
      * @return producer
      */
     public static Producer<byte[], byte[]> makeProducerToEnvoyBroker() {
-        return makeProducer(Environment.ENVOY_BROKER);
+        return makeProducer(Environment.ENVOYS_BOOTSTRAP_ADDRESS);
     }
 
     /**

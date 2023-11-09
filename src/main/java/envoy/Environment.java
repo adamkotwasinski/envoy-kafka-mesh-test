@@ -3,6 +3,7 @@ package envoy;
 import static envoy.RandomHolder.RANDOM;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,8 +26,11 @@ public class Environment {
             .collect(Collectors.toCollection(ArrayList::new));
 
     public static final String ENVOY_BROKER_HOST = "localhost";
-    public static final int ENVOY_BROKER_PORT = 19092;
-    public static final String ENVOY_BROKER = String.format("%s:%s", ENVOY_BROKER_HOST, ENVOY_BROKER_PORT);
+    public static final List<Integer> ENVOY_BROKER_PORTS = Arrays.asList(19092, 19093, 19094);
+
+    public static final String ENVOYS_BOOTSTRAP_ADDRESS = ENVOY_BROKER_PORTS.stream()
+            .map(x -> String.format("%s:%s", ENVOY_BROKER_HOST, x))
+            .collect(Collectors.joining(","));
 
     public static final String ENVOY_MESH = "localhost:29092";
 

@@ -1,12 +1,15 @@
 package envoy.broker;
 
 import static envoy.Records.equalRecordContents;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +17,8 @@ import java.util.Set;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
+import org.apache.kafka.clients.admin.DescribeClusterOptions;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.clients.admin.LogDirDescription;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -23,6 +28,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -125,6 +131,24 @@ public class BrokerTest {
         final LogDirDescription ldd = result.values().iterator().next();
         assertThat(ldd.totalBytes().isPresent(), equalTo(true));
         assertThat(ldd.usableBytes().isPresent(), equalTo(true));
+    }
+
+    @Test
+    public void shouldHandleDescribeCluster()
+            throws Exception {
+
+        // given
+        final Admin admin = AdminProvider.makeBrokerAdmin();
+
+        final DescribeClusterOptions opt = new DescribeClusterOptions();
+
+        // when
+        final DescribeClusterResult result = admin.describeCluster(opt);
+
+        // then
+        final Collection<Node> nodes = result.nodes().get();
+        assertThat(nodes.stream().map(Node::host).collect(toSet()), contains("localhost"));
+        assertThat(nodes.stream().map(Node::port).collect(toSet()), contains(19092, 19093, 19094));
     }
 
 }

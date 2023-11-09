@@ -10,7 +10,7 @@ public class AdminProvider {
 
     public static Admin makeBrokerAdmin() {
         final Properties properties = new Properties();
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOY_BROKER);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, Environment.ENVOYS_BOOTSTRAP_ADDRESS);
         return AdminClient.create(properties);
     }
 
