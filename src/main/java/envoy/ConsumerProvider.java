@@ -14,7 +14,7 @@ public class ConsumerProvider {
      * Create a consumer consuming from Envoy (through the broker filter).
      */
     public static Consumer<byte[], byte[]> makeConsumerFromEnvoyBroker(final String... extraArgs) {
-        return makeConsumer(Environment.ENVOY_BROKER, extraArgs);
+        return makeConsumer(Environment.ENVOYS_BOOTSTRAP_ADDRESS, extraArgs);
     }
 
     /**

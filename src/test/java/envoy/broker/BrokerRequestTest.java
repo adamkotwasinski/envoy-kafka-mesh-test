@@ -1,7 +1,7 @@
 package envoy.broker;
 
 import static envoy.Environment.ENVOY_BROKER_HOST;
-import static envoy.Environment.ENVOY_BROKER_PORT;
+import static envoy.Environment.ENVOY_BROKER_PORTS;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -68,7 +68,7 @@ public class BrokerRequestTest {
                 continue;
             }
 
-            final SocketAddress address = new InetSocketAddress(ENVOY_BROKER_HOST, ENVOY_BROKER_PORT);
+            final SocketAddress address = new InetSocketAddress(ENVOY_BROKER_HOST, ENVOY_BROKER_PORTS.get(0));
             try (SocketChannel channel = SocketChannel.open(address)) {
 
                 final short version = apiKey.latestVersion();
