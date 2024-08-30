@@ -6,9 +6,11 @@ import static envoy.Records.equalRecordContents;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -17,10 +19,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
 import org.apache.kafka.clients.admin.LogDirDescription;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -43,6 +47,10 @@ import envoy.ConsumerProvider;
 import envoy.ProducerProvider;
 import envoy.Records;
 
+/**
+ * @author adam.kotwasinski
+ * @since test
+ */
 public class BrokerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(BrokerTest.class);
@@ -151,6 +159,36 @@ public class BrokerTest {
         final Collection<Node> nodes = result.nodes().get();
         assertThat(nodes.stream().map(Node::host).collect(toSet()), contains(ENVOY_BROKER_HOST));
         assertThat(nodes.stream().map(Node::port).collect(toSet()), contains(ENVOY_BROKER_PORTS.toArray()));
+    }
+
+    @Test
+    public void shouldHandleDescribeConsumerGroup()
+            throws Exception {
+
+        // given - 1 - consumer
+        final String groupName = "shouldHandleDescribeConsumerGroup";
+        try (Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumerFromEnvoyBroker(
+                ConsumerConfig.GROUP_ID_CONFIG, groupName,
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")) {
+
+            // This will make some topic / offsets work happen on the backend.
+            consumer.assign(Collections.singleton(new TopicPartition(groupName, 0)));
+            consumer.poll(Duration.ofSeconds(1));
+            consumer.commitSync();
+        }
+
+        // given - 2
+        final Admin admin = AdminProvider.makeBrokerAdmin();
+        final DescribeConsumerGroupsOptions opt = new DescribeConsumerGroupsOptions();
+
+        // when
+        final var result = admin.describeConsumerGroups(Collections.singleton(groupName), opt);
+
+        // then
+        final Map<String, ConsumerGroupDescription> descriptions = result.all().get();
+        assertThat(descriptions, hasKey(groupName));
+        final ConsumerGroupDescription description = descriptions.get(groupName);
+        assertThat(description.members(), empty());
     }
 
 }
