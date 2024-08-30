@@ -15,6 +15,7 @@ import static org.hamcrest.Matchers.hasKey;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
+import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,7 @@ import com.google.common.collect.Iterables;
 
 import envoy.AdminProvider;
 import envoy.ConsumerProvider;
+import envoy.EnvoyMetrics;
 import envoy.ProducerProvider;
 import envoy.Records;
 
@@ -54,6 +57,14 @@ import envoy.Records;
 public class BrokerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(BrokerTest.class);
+
+    @After
+    public void after()
+            throws Exception {
+
+        final Map<Integer, Integer> unknownRequestCounts = EnvoyMetrics.collectUnknownRequestCounts();
+        assertThat(new HashSet<>(unknownRequestCounts.values()), contains(0));
+    }
 
     @Test
     public void shouldProduceAndConsume()
