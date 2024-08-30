@@ -2,6 +2,8 @@ package envoy.broker;
 
 import static envoy.Environment.ENVOY_BROKER_HOST;
 import static envoy.Environment.ENVOY_BROKER_PORTS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -9,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.kafka.common.message.ApiMessageType;
 import org.apache.kafka.common.protocol.ApiKeys;
@@ -23,6 +26,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import envoy.EnvoyMetrics;
 import envoy.ReadHelper;
 
 /**
@@ -56,15 +60,19 @@ public class BrokerRequestTest {
             ApiKeys.BROKER_HEARTBEAT,
             ApiKeys.UNREGISTER_BROKER);
 
-    // Manual verification: go to http://localhost:9901/stats and take a look at kafka.broker.request.* metrics.
-    // XXX automate this :)
+    // Requests that are simply not supported by the filter.
+    private static final List<ApiKeys> NOT_SUPPORTED = Arrays.asList(
+            ApiKeys.CONSUMER_GROUP_HEARTBEAT);
+
     @Test
     public void shouldSendAllRequests()
             throws Exception {
 
+        final Map<Integer, Integer> unknownsAtStart = EnvoyMetrics.collectUnknownRequestCounts();
+
         for (final ApiKeys apiKey : ApiKeys.values()) {
 
-            if (NOT_TESTED.contains(apiKey)) {
+            if (NOT_TESTED.contains(apiKey) || NOT_SUPPORTED.contains(apiKey)) {
                 LOG.info("Ignoring {}", apiKey);
                 continue;
             }
@@ -84,6 +92,8 @@ public class BrokerRequestTest {
                     receiveResponse(channel, apiKey, version);
                 }
 
+                final Map<Integer, Integer> unknownsAtEnd = EnvoyMetrics.collectUnknownRequestCounts();
+                assertThat("unknown request for " + apiKey, unknownsAtEnd, equalTo(unknownsAtStart));
             }
         }
     }
@@ -129,7 +139,7 @@ public class BrokerRequestTest {
         final ByteBuffer data = ReadHelper.receive(channel);
         final ResponseHeader header = ResponseHeader.parse(data, apiKey.responseHeaderVersion(version));
         final AbstractResponse response = AbstractResponse.parseResponse(apiKey, data, version);
-        LOG.info("Respose [{}]: {}", header.correlationId(), response);
+        LOG.info("Response [{}]: {}", header.correlationId(), response);
     }
 
 }
