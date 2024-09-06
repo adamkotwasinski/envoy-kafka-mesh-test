@@ -2,6 +2,26 @@ package envoy.broker;
 
 import static envoy.Environment.ENVOY_BROKER_HOST;
 import static envoy.Environment.ENVOY_BROKER_PORTS;
+import static org.apache.kafka.common.protocol.ApiKeys.ADD_PARTITIONS_TO_TXN;
+import static org.apache.kafka.common.protocol.ApiKeys.ASSIGN_REPLICAS_TO_DIRS;
+import static org.apache.kafka.common.protocol.ApiKeys.BEGIN_QUORUM_EPOCH;
+import static org.apache.kafka.common.protocol.ApiKeys.BROKER_HEARTBEAT;
+import static org.apache.kafka.common.protocol.ApiKeys.BROKER_REGISTRATION;
+import static org.apache.kafka.common.protocol.ApiKeys.CONSUMER_GROUP_HEARTBEAT;
+import static org.apache.kafka.common.protocol.ApiKeys.CONTROLLER_REGISTRATION;
+import static org.apache.kafka.common.protocol.ApiKeys.DESCRIBE_ACLS;
+import static org.apache.kafka.common.protocol.ApiKeys.DESCRIBE_QUORUM;
+import static org.apache.kafka.common.protocol.ApiKeys.DESCRIBE_TOPIC_PARTITIONS;
+import static org.apache.kafka.common.protocol.ApiKeys.END_QUORUM_EPOCH;
+import static org.apache.kafka.common.protocol.ApiKeys.ENVELOPE;
+import static org.apache.kafka.common.protocol.ApiKeys.FETCH_SNAPSHOT;
+import static org.apache.kafka.common.protocol.ApiKeys.GET_TELEMETRY_SUBSCRIPTIONS;
+import static org.apache.kafka.common.protocol.ApiKeys.LIST_CLIENT_METRICS_RESOURCES;
+import static org.apache.kafka.common.protocol.ApiKeys.OFFSET_FETCH;
+import static org.apache.kafka.common.protocol.ApiKeys.PRODUCE;
+import static org.apache.kafka.common.protocol.ApiKeys.PUSH_TELEMETRY;
+import static org.apache.kafka.common.protocol.ApiKeys.UNREGISTER_BROKER;
+import static org.apache.kafka.common.protocol.ApiKeys.VOTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -27,6 +47,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableSet;
+
 import envoy.EnvoyMetrics;
 import envoy.ReadHelper;
 
@@ -41,28 +63,31 @@ public class BrokerRequestTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(BrokerRequestTest.class);
 
-    // Requets that get ignored by upstream if they have a dummy value - quirky but not surprising (what's the value of empty PRODUCE?).
+    // Requets that get ignored/rejected by upstream if they have a dummy value.
+    // Quirky but not surprising (what's the value of empty PRODUCE?).
     private static final List<ApiKeys> NO_RESPONSE = Arrays.asList(
-            ApiKeys.PRODUCE,
-            ApiKeys.ADD_PARTITIONS_TO_TXN,
-            ApiKeys.CONSUMER_GROUP_HEARTBEAT);
-
-    // Requests that ruin the connection (upstream closes it / ignores future requests) if they have a dummy value.
-    private static final List<ApiKeys> NOT_TESTED = Arrays.asList(
-            ApiKeys.OFFSET_FETCH,
-            ApiKeys.DESCRIBE_ACLS,
-            ApiKeys.VOTE,
-            ApiKeys.BEGIN_QUORUM_EPOCH,
-            ApiKeys.END_QUORUM_EPOCH,
-            ApiKeys.DESCRIBE_QUORUM,
-            ApiKeys.ENVELOPE,
-            ApiKeys.FETCH_SNAPSHOT,
-            ApiKeys.BROKER_REGISTRATION,
-            ApiKeys.BROKER_HEARTBEAT,
-            ApiKeys.UNREGISTER_BROKER);
+            PRODUCE,
+            OFFSET_FETCH,
+            ADD_PARTITIONS_TO_TXN,
+            DESCRIBE_ACLS,
+            VOTE,
+            BEGIN_QUORUM_EPOCH,
+            END_QUORUM_EPOCH,
+            DESCRIBE_QUORUM,
+            ENVELOPE,
+            FETCH_SNAPSHOT,
+            BROKER_REGISTRATION,
+            BROKER_HEARTBEAT,
+            UNREGISTER_BROKER,
+            CONSUMER_GROUP_HEARTBEAT,
+            CONTROLLER_REGISTRATION,
+            ASSIGN_REPLICAS_TO_DIRS,
+            LIST_CLIENT_METRICS_RESOURCES,
+            DESCRIBE_TOPIC_PARTITIONS);
 
     // Requests that are simply not supported by the filter.
-    private static final Predicate<ApiKeys> NOT_SUPPORTED = apiKey -> apiKey.id >= 68 && apiKey.id != 69;
+    private static final Predicate<ApiKeys> NOT_SUPPORTED = ImmutableSet.of(
+            GET_TELEMETRY_SUBSCRIPTIONS, PUSH_TELEMETRY)::contains;
 
     @Test
     public void shouldSendAllRequests()
@@ -72,7 +97,7 @@ public class BrokerRequestTest {
 
         for (final ApiKeys apiKey : ApiKeys.values()) {
 
-            if (NOT_TESTED.contains(apiKey) || NOT_SUPPORTED.test(apiKey)) {
+            if (NOT_SUPPORTED.test(apiKey)) {
                 LOG.info("Ignoring {}", apiKey);
                 continue;
             }

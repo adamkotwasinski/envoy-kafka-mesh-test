@@ -130,9 +130,6 @@ public class BrokerTest {
         dtr.all().get();
     }
 
-    /**
-     * This test requires Kafka broker to be version >= 3.3.1 and have broker.id = 1.
-     */
     @Test
     public void shouldHandleLogDirDescription()
             throws Exception {
