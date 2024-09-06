@@ -12,6 +12,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.kafka.common.message.ApiMessageType;
 import org.apache.kafka.common.protocol.ApiKeys;
@@ -61,8 +62,7 @@ public class BrokerRequestTest {
             ApiKeys.UNREGISTER_BROKER);
 
     // Requests that are simply not supported by the filter.
-    private static final List<ApiKeys> NOT_SUPPORTED = Arrays.asList(
-            ApiKeys.CONSUMER_GROUP_HEARTBEAT);
+    private static final Predicate<ApiKeys> NOT_SUPPORTED = apiKey -> apiKey.id >= 68 && apiKey.id != 69;
 
     @Test
     public void shouldSendAllRequests()
@@ -72,7 +72,7 @@ public class BrokerRequestTest {
 
         for (final ApiKeys apiKey : ApiKeys.values()) {
 
-            if (NOT_TESTED.contains(apiKey) || NOT_SUPPORTED.contains(apiKey)) {
+            if (NOT_TESTED.contains(apiKey) || NOT_SUPPORTED.test(apiKey)) {
                 LOG.info("Ignoring {}", apiKey);
                 continue;
             }
