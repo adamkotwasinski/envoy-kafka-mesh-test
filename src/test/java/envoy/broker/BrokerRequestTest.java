@@ -24,6 +24,7 @@ import static org.apache.kafka.common.protocol.ApiKeys.UNREGISTER_BROKER;
 import static org.apache.kafka.common.protocol.ApiKeys.VOTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,12 +33,17 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.message.ApiMessageType;
+import org.apache.kafka.common.message.ConsumerGroupHeartbeatRequestData;
+import org.apache.kafka.common.message.ConsumerGroupHeartbeatRequestData.TopicPartitions;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.ApiMessage;
 import org.apache.kafka.common.protocol.ByteBufferAccessor;
+import org.apache.kafka.common.protocol.Errors;
 import org.apache.kafka.common.protocol.MessageSizeAccumulator;
 import org.apache.kafka.common.protocol.ObjectSerializationCache;
 import org.apache.kafka.common.requests.AbstractResponse;
@@ -107,7 +113,7 @@ public class BrokerRequestTest {
 
                 final short version = apiKey.latestVersion();
                 LOG.info("Sending {}/{}", apiKey, version);
-                sendRequest(channel, apiKey, version, 0); // This should not fail.
+                generateAndSendRequest(channel, apiKey, version, 0); // This should not fail.
 
                 if (NO_RESPONSE.contains(apiKey)) {
                     LOG.info("Response will not be sent for dummy {} request", apiKey);
@@ -123,10 +129,10 @@ public class BrokerRequestTest {
         }
     }
 
-    private static void sendRequest(final SocketChannel channel,
-                                    final ApiKeys apiKey,
-                                    final short version,
-                                    final int correlationId)
+    private static void generateAndSendRequest(final SocketChannel channel,
+                                               final ApiKeys apiKey,
+                                               final short version,
+                                               final int correlationId)
             throws Exception {
 
         final ApiMessageType apiMessageType = ApiMessageType.fromApiKey(apiKey.id);
@@ -136,6 +142,49 @@ public class BrokerRequestTest {
         final ByteBuffer bytes = toBytes(header, data);
         channel.write(bytes);
     }
+
+    @Test
+    public void shouldHandleConsumerGroupHeartbeat()
+            throws Exception {
+
+        // given
+        final ApiKeys apiKey = ApiKeys.CONSUMER_GROUP_HEARTBEAT;
+        final short version = apiKey.latestVersion();
+
+        final ConsumerGroupHeartbeatRequestData data = new ConsumerGroupHeartbeatRequestData();
+        data.setGroupId("group-id");
+        data.setMemberId("member-id");
+        data.setMemberEpoch(42);
+        data.setInstanceId("instance-id");
+        data.setRackId("rack-id");
+        data.setRebalanceTimeoutMs(42);
+        data.setSubscribedTopicNames(Arrays.asList("t1", "t2", "t3"));
+        data.setServerAssignor("server-assignor");
+        final TopicPartitions tp1 = new TopicPartitions();
+        tp1.setTopicId(new Uuid(13, 42));
+        tp1.setPartitions(Arrays.asList(0, 1, 2));
+        final TopicPartitions tp2 = new TopicPartitions();
+        tp2.setTopicId(new Uuid(23, 52));
+        tp2.setPartitions(Arrays.asList(3, 4, 5));
+        data.setTopicPartitions(Arrays.asList(tp1, tp2));
+
+        final RequestHeader header = new RequestHeader(apiKey, version, "client-id", 0);
+
+        final SocketAddress address = new InetSocketAddress(ENVOY_BROKER_HOST, ENVOY_BROKER_PORTS.get(0));
+        final ByteBuffer bytes = toBytes(header, data);
+
+        try (SocketChannel channel = SocketChannel.open(address)) {
+            // when
+            channel.write(bytes);
+            final Set<Errors> response = receiveResponse(channel, apiKey, version);
+
+            // then
+            assertThat(response, hasItem(Errors.UNSUPPORTED_VERSION));
+        }
+
+    }
+
+    // === MISC ========================================================================================================
 
     private static ByteBuffer toBytes(final RequestHeader header, final ApiMessage data) {
 
@@ -160,11 +209,12 @@ public class BrokerRequestTest {
         return bb;
     }
 
-    private static void receiveResponse(final SocketChannel channel, final ApiKeys apiKey, final short version) {
+    private static Set<Errors> receiveResponse(final SocketChannel channel, final ApiKeys apiKey, final short version) {
         final ByteBuffer data = ReadHelper.receive(channel);
         final ResponseHeader header = ResponseHeader.parse(data, apiKey.responseHeaderVersion(version));
         final AbstractResponse response = AbstractResponse.parseResponse(apiKey, data, version);
         LOG.info("Response [{}]: {}", header.correlationId(), response);
+        return response.errorCounts().keySet();
     }
 
 }
