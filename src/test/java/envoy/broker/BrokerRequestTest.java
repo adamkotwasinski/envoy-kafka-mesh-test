@@ -23,6 +23,7 @@ import static org.apache.kafka.common.protocol.ApiKeys.PUSH_TELEMETRY;
 import static org.apache.kafka.common.protocol.ApiKeys.UNREGISTER_BROKER;
 import static org.apache.kafka.common.protocol.ApiKeys.VOTE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 
@@ -31,6 +32,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +51,7 @@ import org.apache.kafka.common.protocol.ObjectSerializationCache;
 import org.apache.kafka.common.requests.AbstractResponse;
 import org.apache.kafka.common.requests.RequestHeader;
 import org.apache.kafka.common.requests.ResponseHeader;
+import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +97,14 @@ public class BrokerRequestTest {
     // Requests that are simply not supported by the filter.
     private static final Predicate<ApiKeys> NOT_SUPPORTED = ImmutableSet.of(
             GET_TELEMETRY_SUBSCRIPTIONS, PUSH_TELEMETRY)::contains;
+
+    @After
+    public void after()
+            throws Exception {
+
+        final Map<Integer, Integer> unknownRequestCounts = EnvoyMetrics.collectUnknownRequestCounts();
+        assertThat(new HashSet<>(unknownRequestCounts.values()), contains(0));
+    }
 
     @Test
     public void shouldSendAllRequests()
