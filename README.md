@@ -28,9 +28,9 @@ Notice that broker ids are important here.
 ## Requirements for mesh-filter tests:
 
 * 3 Kafka clusters on:
-    * localhost:9492, with topics `apples`, `apricots` with 1 partition each
-    * localhost:9493, with topics `bananas`, `berries` with 1 partition each
-    * localhost:9494, with topics `cherries`, `chocolates` with 5 partitions each
+    * localhost:9492
+    * localhost:9493
+    * localhost:9494
 * Envoy listening on localhost:29092, with forwarding prefix-based rules:
     * `a` to localhost:9492
     * `b` to localhost:9493

@@ -28,6 +28,10 @@ import envoy.Environment;
 import envoy.ProducerProvider;
 import envoy.Records;
 
+/**
+ * @author adam.kotwasinski
+ * @since test
+ */
 public class SimpleMeshTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleMeshTest.class);
@@ -38,7 +42,10 @@ public class SimpleMeshTest {
     private Producer<byte[], byte[]> producer;
 
     @Before
-    public void setUp() {
+    public void setUp()
+            throws Exception {
+
+        Preconditions.setupEmptyTopics(Environment.CLUSTER1);
         this.producer = ProducerProvider.makeProducerToEnvoyMesh();
     }
 

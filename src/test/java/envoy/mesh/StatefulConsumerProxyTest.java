@@ -8,15 +8,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -30,7 +25,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import envoy.AdminProvider;
 import envoy.ConsumerProvider;
 import envoy.Environment;
 import envoy.ProducerProvider;
@@ -64,33 +58,11 @@ public class StatefulConsumerProxyTest {
     public void setUp()
             throws Exception {
 
-        for (final UpstreamCluster cluster : TEST_CLUSTERS) {
-            createTopics(cluster);
-        }
+        Preconditions.setupEmptyTopics(TEST_CLUSTERS);
         for (final UpstreamCluster cluster : TEST_CLUSTERS) {
             setupMessages(cluster);
         }
         LOG.info("Setup finished");
-    }
-
-    private static void createTopics(final UpstreamCluster cluster)
-            throws Exception {
-
-        try (Admin admin = AdminProvider.makeClusterAdmin(cluster)) {
-
-            final Set<NewTopic> topics = cluster.getTopics()
-                    .stream()
-                    .map(x -> new NewTopic(x, cluster.getPartitionCount(), (short) 1))
-                    .collect(Collectors.toSet());
-
-            LOG.info("Creating topics: {}", topics);
-            try {
-                admin.createTopics(topics).all().get();
-            }
-            catch (final ExecutionException e) {
-                LOG.warn("Could not setup topics", e);
-            }
-        }
     }
 
     private void setupMessages(final UpstreamCluster cluster)
