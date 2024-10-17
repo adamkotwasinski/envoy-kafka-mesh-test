@@ -1,6 +1,9 @@
 package envoy.mesh;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
+import static envoy.Environment.CLUSTER1;
+import static envoy.Environment.CLUSTER2;
+import static envoy.Environment.CLUSTER3;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -14,14 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
-import envoy.AdminProvider;
 import envoy.ConsumerProvider;
 import envoy.Delayer;
 import envoy.Environment;
@@ -84,33 +82,11 @@ public class MultipleTopicMeshTest {
     public void setUp()
             throws Exception {
 
-        createTopics(Environment.CLUSTER1);
-        createTopics(Environment.CLUSTER2);
-        createTopics(Environment.CLUSTER3);
+        Preconditions.setupEmptyTopics(CLUSTER1, CLUSTER2, CLUSTER3);
 
         this.producers = createProducers();
         this.consumers = createConsumers();
         this.executor = Executors.newFixedThreadPool(this.producers.size() + this.consumers.size());
-    }
-
-    private static void createTopics(final UpstreamCluster cluster)
-            throws Exception {
-
-        try (Admin admin = AdminProvider.makeClusterAdmin(cluster)) {
-
-            final Set<NewTopic> topics = cluster.getTopics()
-                    .stream()
-                    .map(x -> new NewTopic(x, cluster.getPartitionCount(), (short) 1))
-                    .collect(Collectors.toSet());
-
-            LOG.info("Creating topics: {}", topics);
-            try {
-                admin.createTopics(topics).all().get();
-            }
-            catch (final ExecutionException e) {
-                LOG.warn("Could not setup topics", e);
-            }
-        }
     }
 
     private List<Producer<byte[], byte[]>> createProducers() {
@@ -127,7 +103,7 @@ public class MultipleTopicMeshTest {
         for (final UpstreamCluster cluster : Environment.CLUSTERS) {
             final Consumer<byte[], byte[]> consumer = ConsumerProvider.makeConsumerFromKafkaDirectly(cluster,
                     ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-            final List<TopicPartition> partitions = cluster.allConsumerPartitions();
+            final List<TopicPartition> partitions = cluster.allPartitions();
             consumer.assign(partitions);
             partitions.forEach(partition -> {
                 final long position = consumer.position(partition);

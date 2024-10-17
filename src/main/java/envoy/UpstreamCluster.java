@@ -35,7 +35,7 @@ public class UpstreamCluster {
         return this.topics;
     }
 
-    public List<TopicPartition> allConsumerPartitions() {
+    public List<TopicPartition> allPartitions() {
         final List<TopicPartition> partitions = new ArrayList<>();
         for (final String topic : this.topics) {
             for (int i = 0; i < this.partitionCount; ++i) {
@@ -43,6 +43,11 @@ public class UpstreamCluster {
             }
         }
         return partitions;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("UC[%s]", this.brokers);
     }
 
 }
